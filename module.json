@@ -1,6 +1,6 @@
 {
   "name": "p9813",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Port of the mbed Seeed RGB LED library for the Grove Chainable RGB LED, which uses the P9813",
   "keywords": [
     "seeed",
@@ -17,6 +17,6 @@
     "url": "https://github.com/bridadan/p9813.git"
   },
   "dependencies": {
-    "mbed-drivers": "~0.11.8"
+    "mbed-drivers": "*"
   }
 }
