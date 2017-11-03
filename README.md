@@ -4,36 +4,34 @@ Port of the mbed Seeed RGB LED library for the Grove Chainable RGB LED, which us
 
 **Original mbed library:** https://developer.mbed.org/teams/Seeed/code/Chainable_RGB_LED/
 
-**Seeed Wiki page:** http://www.seeedstudio.com/wiki/index.php?title=Twig_-_Chainable_RGB_LED
+**Seeed Wiki page:** http://wiki.seeed.cc/Grove-Chainable_RGB_LED/
 
-## API
+## Example
 
-### P9813(PinName clk_pin, PinName data_pin, uint32_t number_of_leds)
+```c++
+#include "mbed.h"
+#include "p9813.h"
 
-Constructor for the library
+#define NUM_LEDS 3
 
-  - `clk_pin` - mbed pin that is connected to the "Clock In" pin
-  - `clk_pin` - mbed pin that is connected to the "Data In" pin
-  - `number_of_leds` - Number of LEDs chained together
+P9813 leds(dp6, dp2);
+P9813::led_val_t led_data[NUM_LEDS];
 
-### void setColorRGB(uint32_t led, uint8_t red, uint8_t green, uint8_t blue)
 
-Set the color of an individual LED using RGB values
+int main() {
+    leds.clear(NUM_LEDS);
+    while(1) {
+        // Slowly fade to bright white
+        for (int i = 0; i < 255; i++) {
+            for (int j = 0; j < NUM_LEDS; j++) {
+                led_data[j].r = i;
+                led_data[j].g = i;
+                led_data[j].b = i;
+            }
 
-  - `led` - Index of the LED (starting with `0`)
-  - `red` - Intensity of the red LED (`0` - `255`)
-  - `green` - Intensity of the green LED (`0` - `255`)
-  - `blue` - Intensity of the blue LED (`0` - `255`)
-
-### void setColorHSB(uint32_t led, float hue, float saturation, float brightness)
-
-Set the color of an individual LED using HSB values
-
-  - `led` - Index of the LED (starting with `0`)
-  - `hue` - Hue component of the RGB LED (`0.0` - `1.0`)
-  - `saturation` - Saturation component of the RGB LED (`0.0` - `1.0`)
-  - `brightness` - Brightness component of the RGB LED (`0.0` - `1.0`)
-
-###  void ledsOff()
-
-Turn off all of the LEDs
+            leds.send(led_data, NUM_LEDS);
+            wait(0.02);
+        }
+    }
+}
+```
