@@ -31,61 +31,52 @@
 
 #include "p9813/p9813.h"
 
-float hue2rgb(float p, float q, float t)
-{
-    if (t < 0.0f) {
-        t += 1.0f;
-    }
-    if(t > 1.0f) {
-        t -= 1.0f;
-    }
-    if(t < 1.0f/6.0f) {
-        return p + (q - p) * 6.0f * t;
-    }
-    if(t < 1.0f/2.0f) {
-        return q;
-    }
-    if(t < 2.0f/3.0f) {
-        return p + (q - p) * (2.0f/3.0f - t) * 6.0f;
-    }
-
-    return p;
-}
 
 // --------------------------------------------------------------------------------------
 
-P9813::P9813(PinName clk_pin, PinName data_pin, uint32_t number_of_leds) :
-    _clk_pin(clk_pin),
-    _data_pin(data_pin),
-    _num_leds(number_of_leds)
-{
-    _leds = new led_val_t [number_of_leds];
-    _clk_pin = 0;
-    _data_pin = 0;
-    ledsOff();
+P9813::P9813(PinName clk_pin, PinName data_pin)
+:_spi(data_pin, NC, clk_pin, NC) {
 }
 
-P9813::~P9813()
-{
-    delete [] _leds;
-}
+void P9813::send(led_val_t *leds, unsigned int length) {
+    // Send data frame prefix (32x "0")
+    sendByte(0x00);
+    sendByte(0x00);
+    sendByte(0x00);
+    sendByte(0x00);
 
-void P9813::ledsOff(void)
-{
-    for (uint8_t i=0; i<_num_leds; i++) {
-        setColorRGB(i, 0, 0, 0);
+    // Send color data for each one of the leds
+    for (unsigned int i = 0; i < length; i++) {
+        sendColor(leds->rgb[i * 3 + 0], leds->rgb[i * 3 + 1], leds->rgb[i * 3 + 2]);
     }
+
+    // Terminate data frame (32x "0")
+    sendByte(0x00);
+    sendByte(0x00);
+    sendByte(0x00);
+    sendByte(0x00);
+}
+
+void P9813::clear(unsigned int length) {
+    sendByte(0x00);
+    sendByte(0x00);
+    sendByte(0x00);
+    sendByte(0x00);
+
+    for (int i = 0; i < length; i++) {
+        sendColor(0, 0, 0);
+    }
+
+    sendByte(0x00);
+    sendByte(0x00);
+    sendByte(0x00);
+    sendByte(0x00);
 }
 
 void P9813::sendByte(uint8_t b)
 {
     // Send one bit at a time, starting with the MSB
-    for (uint8_t i=0; i<8; i++) {
-        _data_pin = (b & 0x80) ? 1 : 0;
-        _clk_pin = 1;
-        _clk_pin = 0;
-        b <<= 1;
-    }
+    _spi.write(b);
 }
 
 void P9813::sendColor(uint8_t red, uint8_t green, uint8_t blue)
@@ -99,59 +90,4 @@ void P9813::sendColor(uint8_t red, uint8_t green, uint8_t blue)
     sendByte(blue);
     sendByte(green);
     sendByte(red);
-}
-
-void P9813::setColorRGB(uint32_t led, uint8_t red, uint8_t green, uint8_t blue)
-{
-    // Send data frame prefix (32x "0")
-    sendByte(0x00);
-    sendByte(0x00);
-    sendByte(0x00);
-    sendByte(0x00);
-
-    // Send color data for each one of the leds
-    for (uint8_t i=0; i<_num_leds; i++) {
-        if (i == led) {
-            _leds->rgb[i*3 + 0] = red;
-            _leds->rgb[i*3 + 1] = green;
-            _leds->rgb[i*3 + 2] = blue;
-        }
-        sendColor(_leds->rgb[i*3 + 0], _leds->rgb[i*3 + 1], _leds->rgb[i*3 + 2]);
-    }
-
-    // Terminate data frame (32x "0")
-    sendByte(0x00);
-    sendByte(0x00);
-    sendByte(0x00);
-    sendByte(0x00);
-}
-
-template<typename T>
-T min(T a, T b) { return (a < b) ? a : b; }
-
-template<typename T>
-static inline T max(T a, T b) { return (a > b) ? a : b; }
-
-void P9813::setColorHSB(uint32_t led, float hue, float saturation, float brightness)
-{
-    float r, g, b;
-
-    hue = min<float>(hue, 1.0f);//constrain(hue, 0.0, 1.0);
-    hue = max<float>(hue, 0.0f);
-    saturation = min<float>(saturation, 1.0f);//constrain(saturation, 0.0, 1.0);
-    saturation = max<float>(saturation, 0.0f);
-    brightness = min<float>(brightness, 1.0f);//constrain(brightness, 0.0, 1.0);
-    brightness = max<float>(brightness, 0.0f);
-
-    if(saturation == 0.0f) {
-        r = g = b = brightness;
-    } else {
-        float q = (brightness < 0.5f) ? (brightness * (1.0f + saturation)) : (brightness + saturation - brightness * saturation);
-        float p = 2.0f * brightness - q;
-        r = hue2rgb(p, q, hue + 1.0f/3.0f);
-        g = hue2rgb(p, q, hue);
-        b = hue2rgb(p, q, hue - 1.0f/3.0f);
-    }
-
-    setColorRGB(led, (uint8_t)(255.0f*r), (uint8_t)(255.0f*g), (uint8_t)(255.0f*b));
 }

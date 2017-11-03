@@ -33,30 +33,25 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef P9813_H
 #define P9813_H
 
-#include "mbed-drivers/mbed.h"
+#include "mbed.h"
 
 class P9813
 {
 public:
-    P9813(PinName clk_pin, PinName data_pin, uint32_t number_of_leds);
-    ~P9813();
-
-    void setColorRGB(uint32_t led, uint8_t red, uint8_t green, uint8_t blue);
-    void setColorHSB(uint32_t led, float hue, float saturation, float brightness);
-    void ledsOff(void);
-
-private:
-    DigitalOut _clk_pin;
-    DigitalOut _data_pin;
-    uint32_t   _num_leds;
-
     typedef union {
         uint8_t rgb[3];
         struct {
             uint8_t r, g, b;
         };
     } led_val_t;
-    led_val_t *_leds;
+
+    P9813(PinName clk_pin, PinName data_pin);
+
+    void send(led_val_t *leds, unsigned int length);
+    void clear(unsigned int length);
+
+private:
+    SPI _spi;
 
     void sendByte(uint8_t b);
     void sendColor(uint8_t red, uint8_t green, uint8_t blue);
